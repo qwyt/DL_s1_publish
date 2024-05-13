@@ -7562,7 +7562,37 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="Model-Training">Model Training<a class="anchor-link" href="#Model-Training">¶</a></h3>
+<h3 id="Fine-Tuning-a-ResNet-Model-for-Image-Classification">Fine Tuning a ResNet Model for Image Classification<a class="anchor-link" href="#Fine-Tuning-a-ResNet-Model-for-Image-Classification">¶</a></h3><p>Our goal is to train a classification model capable of identifying different kinds of mushrooms using a pretrained ResNet model. This transfer learning approach is effective with limited data, leveraging the  knowledge embedded in ResNet50 which was trained on much larger datasets.</p>
+<ul>
+<li><p>The model is trained with around 5000 images, applying conservative augmentation techniques.</p>
+</li>
+<li><p>Initially, the model is tuned with its initial convolutional layers frozen. These layers capture universal visual features like edges, textures, and basic shapes, with filters trained to detect low-level, general characteristics useful across various visual tasks. Freezing these layers prevents their weights from updating, allowing the model to learn class-specific features without altering the general image representations already learned by ResNet50 (this minimizes overfitting) .e.g with ResNet50:</p>
+</li>
+<li><p>Initially, the model's initial convolutional layers are frozen to maintain their ability to capture universal visual features such as edges and textures and basic shapes.  Freezing prevents updates to these layers' weights, restricting  the "learning" to clss  class-specific features without altering the general image representations learned by ResNet50 therefore minimizing the risk overfitting. .e.g. structure of ResNet50:</p>
+<ul>
+<li><p>An input layer processing images,</p>
+</li>
+<li><p>A 7x7 convolutional layer with 64 filters and a 3x3 max pooling layer, which together extract basic visual features like edges and textures.</p>
+</li>
+<li><p>sequence of residual blocks:</p>
+<ul>
+<li>Conv Block 1: Three layers with 64, 64, 256 filters, repeated three times.</li>
+<li>Conv Block 2: Increases filters to 128, 128, 512, repeated four times.</li>
+<li>Conv Block 3: Escalates to 256, 256, 1024, with six repetitions.</li>
+<li>Conv Block 4: Peaks at 512, 512, 2048 filters, repeated three times.</li>
+<li>Average pooling Llyer: Reduces feature dimensionality.</li>
+<li>Fully connected layer: Executes final classification.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Conv Block 4 and the Fully Connected Layer are unfrozen during training to allow fine-tuning to dataset-specific features.</p>
+<ul>
+<li>Subsequently, the entire model is unfrozen for more comprehensive fine-tuning, including the pre-trained weights, over N epochs  (using an early stopping callback to stop training after the validation loss stops decreasing).</li>
+</ul>
+<p>Backpropagation updates weights based on loss gradients, supplemented by learning rate adjustments such as annealing to refine updates without significant deviations from the pretrained configuration.</p>
+<p>These layers adapt their filters to better represent the unique features of our mushroom dataset (this would in theory involve more complex feature interactions than those in the original training dataset, like ImageNet)</p>
 </div>
 </div>
 </div>
@@ -7573,13 +7603,14 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h5 id="Model-Selection">Model Selection<a class="anchor-link" href="#Model-Selection">¶</a></h5><p>We're using a base ResNet model and finetuning using our mushrooms dataset. We've tried multiple sizes:</p>
-<p><code>ResNet18</code> -  18  layers deep with fewer filters and layers compared to ResNet34 and ResNet50. Specifically, it has 2 layers each in the first three sets of its convolutional blocks and 2 layers in the last set. ~11.7 million parameters.</p>
-<h5 id="Achieved-up-to-F1=-~0.91-on-the-validation-set">Achieved up to F1= ~0.91 on the validation set<a class="anchor-link" href="#Achieved-up-to-F1=-~0.91-on-the-validation-set">¶</a></h5><p>--</p>
+<h5 id="Model-Selection">Model Selection<a class="anchor-link" href="#Model-Selection">¶</a></h5><p><code>ResNet18</code> -  18  layers deep with fewer filters and layers compared to ResNet34 and ResNet50. Specifically, it has 2 layers each in the first three sets of its convolutional blocks and 2 layers in the last set. ~11.7 million parameters.</p>
+<p><strong>Achieved up to F1= ~0.91 on the validation set</strong></p>
+<p>--</p>
 <p><code>ResNet34</code> - 34 total, it has 3, 4, 6, and 3 layers in the four sets of its convolutional. ~ 21.8 million params</p>
-<h5 id="up-to-F1=-~0.92">up to F1= ~0.92<a class="anchor-link" href="#up-to-F1=-~0.92">¶</a></h5><p>--</p>
+<p><strong>up to F1= ~0.92</strong></p>
+<p>--</p>
 <p><code>ResNet50</code> - introduces bottleneck layers to reduce the computational burden. It has a different block structure with 1x1, 3x3, and 1x1 convolutions where the 1x1 layers are responsible for reducing and then increasing (restoring) dimensions, keeping the 3x3 layer a bottleneck with fewer input/output dimensions. ~25.6 million params.</p>
-<h5 id="up-to-F1-=-~0.95">up to F1 = ~0.95<a class="anchor-link" href="#up-to-F1-=-~0.95">¶</a></h5>
+<p><strong>up to F1 = ~0.95</strong></p>
 </div>
 </div>
 </div>
@@ -7613,7 +7644,12 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h5 id="Model-fine-tuning-and-training">Model fine tuning and training<a class="anchor-link" href="#Model-fine-tuning-and-training">¶</a></h5><p>{TODO: EXPLAIN}</p>
+<h5 id="Model-fine-tuning-and-training">Model fine tuning and training<a class="anchor-link" href="#Model-fine-tuning-and-training">¶</a></h5><p>We've selected <code>ResNet50</code> as our final "production" model because we were able to achieve signficantly better performance with it, however depending on the application and technical constraints this might not be the optimal choice:</p>
+<ul>
+<li>Tuning/training in a reasonable amount of time requires a relatively recent GPU with at least 16 GB or so of memory.</li>
+<li>However, relatively to more modern deeply learning models (especially LLMs etc.) memory requirements for inference are low and shouldn't exceed a few hundred MB even for ResNet50 for a single image and 50-100ms or so even on CPUs.</li>
+<li>This becomes a much more important issue when if we're working with live recognition/videos/AR rather than individual static images. In that case the 3-5x performance difference might become very significant when running on non high-end desktop/server level hardware e.g. AR and similar apps on mobile devices would generally use ResNet18, ResNet34 or more likely shallower models like MobileNet, EfficientNet etc which would have lower parameter count and be faster.</li>
+</ul>
 </div>
 </div>
 </div>

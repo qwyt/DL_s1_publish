@@ -7586,21 +7586,21 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">if</span> <span class="n">VERBOSE</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-    
+
     <span class="nb">print</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">())</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">release</span><span class="p">())</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">version</span><span class="p">())</span>
-    
+
     <span class="nb">print</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">())</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">processor</span><span class="p">())</span>
     <span class="n">cuda_available</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"CUDA is available:"</span><span class="p">,</span> <span class="n">cuda_available</span><span class="p">)</span>
-    
+
     <span class="k">if</span> <span class="n">cuda_available</span><span class="p">:</span>
         <span class="c1"># Check if PyTorch is currently using CUDA</span>
         <span class="n">is_using_cuda</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"PyTorch is using CUDA:"</span><span class="p">,</span> <span class="n">is_using_cuda</span><span class="p">)</span>
-    
+
         <span class="c1"># Get the name of your GPU</span>
         <span class="n">gpu_name</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"GPU:"</span><span class="p">,</span> <span class="n">gpu_name</span><span class="p">)</span>
@@ -7641,7 +7641,37 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="Model-Training">Model Training<a class="anchor-link" href="#Model-Training">¶</a></h3>
+<h3 id="Fine-Tuning-a-ResNet-Model-for-Image-Classification">Fine Tuning a ResNet Model for Image Classification<a class="anchor-link" href="#Fine-Tuning-a-ResNet-Model-for-Image-Classification">¶</a></h3><p>Our goal is to train a classification model capable of identifying different kinds of mushrooms using a pretrained ResNet model. This transfer learning approach is effective with limited data, leveraging the  knowledge embedded in ResNet50 which was trained on much larger datasets.</p>
+<ul>
+<li><p>The model is trained with around 5000 images, applying conservative augmentation techniques.</p>
+</li>
+<li><p>Initially, the model is tuned with its initial convolutional layers frozen. These layers capture universal visual features like edges, textures, and basic shapes, with filters trained to detect low-level, general characteristics useful across various visual tasks. Freezing these layers prevents their weights from updating, allowing the model to learn class-specific features without altering the general image representations already learned by ResNet50 (this minimizes overfitting) .e.g with ResNet50:</p>
+</li>
+<li><p>Initially, the model's initial convolutional layers are frozen to maintain their ability to capture universal visual features such as edges and textures and basic shapes.  Freezing prevents updates to these layers' weights, restricting  the "learning" to clss  class-specific features without altering the general image representations learned by ResNet50 therefore minimizing the risk overfitting. .e.g. structure of ResNet50:</p>
+<ul>
+<li><p>An input layer processing images,</p>
+</li>
+<li><p>A 7x7 convolutional layer with 64 filters and a 3x3 max pooling layer, which together extract basic visual features like edges and textures.</p>
+</li>
+<li><p>sequence of residual blocks:</p>
+<ul>
+<li>Conv Block 1: Three layers with 64, 64, 256 filters, repeated three times.</li>
+<li>Conv Block 2: Increases filters to 128, 128, 512, repeated four times.</li>
+<li>Conv Block 3: Escalates to 256, 256, 1024, with six repetitions.</li>
+<li>Conv Block 4: Peaks at 512, 512, 2048 filters, repeated three times.</li>
+<li>Average pooling Llyer: Reduces feature dimensionality.</li>
+<li>Fully connected layer: Executes final classification.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Conv Block 4 and the Fully Connected Layer are unfrozen during training to allow fine-tuning to dataset-specific features.</p>
+<ul>
+<li>Subsequently, the entire model is unfrozen for more comprehensive fine-tuning, including the pre-trained weights, over N epochs  (using an early stopping callback to stop training after the validation loss stops decreasing).</li>
+</ul>
+<p>Backpropagation updates weights based on loss gradients, supplemented by learning rate adjustments such as annealing to refine updates without significant deviations from the pretrained configuration.</p>
+<p>These layers adapt their filters to better represent the unique features of our mushroom dataset (this would in theory involve more complex feature interactions than those in the original training dataset, like ImageNet)</p>
 </div>
 </div>
 </div>
@@ -7652,13 +7682,14 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h5 id="Model-Selection">Model Selection<a class="anchor-link" href="#Model-Selection">¶</a></h5><p>We're using a base ResNet model and finetuning using our mushrooms dataset. We've tried multiple sizes:</p>
-<p><code>ResNet18</code> -  18  layers deep with fewer filters and layers compared to ResNet34 and ResNet50. Specifically, it has 2 layers each in the first three sets of its convolutional blocks and 2 layers in the last set. ~11.7 million parameters.</p>
-<h5 id="Achieved-up-to-F1=-~0.91-on-the-validation-set">Achieved up to F1= ~0.91 on the validation set<a class="anchor-link" href="#Achieved-up-to-F1=-~0.91-on-the-validation-set">¶</a></h5><p>--</p>
+<h5 id="Model-Selection">Model Selection<a class="anchor-link" href="#Model-Selection">¶</a></h5><p><code>ResNet18</code> -  18  layers deep with fewer filters and layers compared to ResNet34 and ResNet50. Specifically, it has 2 layers each in the first three sets of its convolutional blocks and 2 layers in the last set. ~11.7 million parameters.</p>
+<p><strong>Achieved up to F1= ~0.91 on the validation set</strong></p>
+<p>--</p>
 <p><code>ResNet34</code> - 34 total, it has 3, 4, 6, and 3 layers in the four sets of its convolutional. ~ 21.8 million params</p>
-<h5 id="up-to-F1=-~0.92">up to F1= ~0.92<a class="anchor-link" href="#up-to-F1=-~0.92">¶</a></h5><p>--</p>
+<p><strong>up to F1= ~0.92</strong></p>
+<p>--</p>
 <p><code>ResNet50</code> - introduces bottleneck layers to reduce the computational burden. It has a different block structure with 1x1, 3x3, and 1x1 convolutions where the 1x1 layers are responsible for reducing and then increasing (restoring) dimensions, keeping the 3x3 layer a bottleneck with fewer input/output dimensions. ~25.6 million params.</p>
-<h5 id="up-to-F1-=-~0.95">up to F1 = ~0.95<a class="anchor-link" href="#up-to-F1-=-~0.95">¶</a></h5>
+<p><strong>up to F1 = ~0.95</strong></p>
 </div>
 </div>
 </div>
@@ -7690,7 +7721,7 @@ PyTorch version: 12.1
 <div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">'studies/main_study.pkl'</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"studies/main_study.pkl"</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">loaded_study</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 <span class="n">selected_trial</span> <span class="o">=</span> <span class="n">loaded_study</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="mi">84</span><span class="p">]</span>
 </pre></div>
@@ -7706,9 +7737,16 @@ PyTorch version: 12.1
 <div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">seected_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'batch_size'</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s1">'base_lr'</span><span class="p">:</span> <span class="mf">0.0014050114695105182</span><span class="p">,</span> <span class="s1">'weight_decay'</span><span class="p">:</span> <span class="mf">0.09308356639366534</span><span class="p">,</span>
-                  <span class="s1">'lr_mult'</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">'lr_scheduler'</span><span class="p">:</span> <span class="s1">'flat_cos'</span><span class="p">,</span> <span class="s1">'freeze_epochs'</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">'pct_start'</span><span class="p">:</span> <span class="mf">0.39954565320066476</span><span class="p">,</span>
-                  <span class="s1">'aug_mode'</span><span class="p">:</span> <span class="s1">'mult_1.25_more_trans'</span><span class="p">}</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">seected_params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span>
+    <span class="s2">"base_lr"</span><span class="p">:</span> <span class="mf">0.0014050114695105182</span><span class="p">,</span>
+    <span class="s2">"weight_decay"</span><span class="p">:</span> <span class="mf">0.09308356639366534</span><span class="p">,</span>
+    <span class="s2">"lr_mult"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s2">"lr_scheduler"</span><span class="p">:</span> <span class="s2">"flat_cos"</span><span class="p">,</span>
+    <span class="s2">"freeze_epochs"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="s2">"pct_start"</span><span class="p">:</span> <span class="mf">0.39954565320066476</span><span class="p">,</span>
+    <span class="s2">"aug_mode"</span><span class="p">:</span> <span class="s2">"mult_1.25_more_trans"</span><span class="p">,</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -7735,7 +7773,12 @@ PyTorch version: 12.1
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h5 id="Model-fine-tuning-and-training">Model fine tuning and training<a class="anchor-link" href="#Model-fine-tuning-and-training">¶</a></h5><p>{TODO: EXPLAIN}</p>
+<h5 id="Model-fine-tuning-and-training">Model fine tuning and training<a class="anchor-link" href="#Model-fine-tuning-and-training">¶</a></h5><p>We've selected <code>ResNet50</code> as our final "production" model because we were able to achieve signficantly better performance with it, however depending on the application and technical constraints this might not be the optimal choice:</p>
+<ul>
+<li>Tuning/training in a reasonable amount of time requires a relatively recent GPU with at least 16 GB or so of memory.</li>
+<li>However, relatively to more modern deeply learning models (especially LLMs etc.) memory requirements for inference are low and shouldn't exceed a few hundred MB even for ResNet50 for a single image and 50-100ms or so even on CPUs.</li>
+<li>This becomes a much more important issue when if we're working with live recognition/videos/AR rather than individual static images. In that case the 3-5x performance difference might become very significant when running on non high-end desktop/server level hardware e.g. AR and similar apps on mobile devices would generally use ResNet18, ResNet34 or more likely shallower models like MobileNet, EfficientNet etc which would have lower parameter count and be faster.</li>
+</ul>
 </div>
 </div>
 </div>
@@ -7751,13 +7794,13 @@ PyTorch version: 12.1
 
 <span class="n">DS_PATH</span> <span class="o">=</span> <span class="s2">"dataset"</span>
 
-<span class="n">batch_size</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'batch_size'</span><span class="p">]</span>
-<span class="n">base_lr</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'base_lr'</span><span class="p">]</span>
-<span class="n">weight_decay</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'weight_decay'</span><span class="p">]</span>
-<span class="n">lr_mult</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'lr_mult'</span><span class="p">]</span>
-<span class="n">lr_scheduler_type</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'lr_scheduler'</span><span class="p">]</span>
-<span class="n">freeze_epochs</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'freeze_epochs'</span><span class="p">]</span>
-<span class="n">pct_start</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s1">'pct_start'</span><span class="p">]</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">]</span>
+<span class="n">base_lr</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"base_lr"</span><span class="p">]</span>
+<span class="n">weight_decay</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"weight_decay"</span><span class="p">]</span>
+<span class="n">lr_mult</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"lr_mult"</span><span class="p">]</span>
+<span class="n">lr_scheduler_type</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"lr_scheduler"</span><span class="p">]</span>
+<span class="n">freeze_epochs</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"freeze_epochs"</span><span class="p">]</span>
+<span class="n">pct_start</span> <span class="o">=</span> <span class="n">seected_params</span><span class="p">[</span><span class="s2">"pct_start"</span><span class="p">]</span>
 
 <span class="n">balancing</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -7768,11 +7811,11 @@ PyTorch version: 12.1
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_dataloaders</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">aug_mode</span><span class="o">=</span><span class="n">aug_mode</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">DS_PATH</span><span class="p">)</span>
 
-<span class="n">learn</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_learner</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">weight_decay</span><span class="p">,</span> <span class="n">balancing</span><span class="p">,</span> <span class="n">model_type</span><span class="o">=</span><span class="n">ml_utils</span><span class="o">.</span><span class="n">ModelType</span><span class="o">.</span><span class="n">RESNET50</span><span class="p">)</span>
+<span class="n">learn</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_learner</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">weight_decay</span><span class="p">,</span> <span class="n">balancing</span><span class="p">,</span> <span class="n">model_type</span><span class="o">=</span><span class="n">ml_utils</span><span class="o">.</span><span class="n">ModelType</span><span class="o">.</span><span class="n">RESNET50</span>
+<span class="p">)</span>
 
-<span class="n">callbacks</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">ml_utils</span><span class="o">.</span><span class="n">EarlyStoppingCallback</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s1">'valid_loss'</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<span class="p">]</span>
+<span class="n">callbacks</span> <span class="o">=</span> <span class="p">[</span><span class="n">ml_utils</span><span class="o">.</span><span class="n">EarlyStoppingCallback</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">"valid_loss"</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">4</span><span class="p">)]</span>
 </pre></div>
 </div>
 </div>
@@ -7816,14 +7859,16 @@ using RESNET50
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">ml_utils</span><span class="p">)</span>
-<span class="n">learn</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">train_model</span><span class="p">(</span><span class="n">learn</span><span class="o">=</span><span class="n">learn</span><span class="p">,</span>
-                             <span class="n">base_lr</span><span class="o">=</span><span class="n">base_lr</span><span class="p">,</span>
-                             <span class="n">lr_mult</span><span class="o">=</span><span class="n">lr_mult</span><span class="p">,</span>
-                             <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="n">lr_scheduler_type</span><span class="p">,</span>
-                             <span class="n">freeze_epochs</span><span class="o">=</span><span class="n">freeze_epochs</span><span class="p">,</span>
-                             <span class="n">num_epochs</span><span class="o">=</span><span class="n">num_epochs</span><span class="p">,</span>
-                             <span class="n">pct_start</span><span class="o">=</span><span class="n">pct_start</span><span class="p">,</span>
-                             <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">)</span>
+<span class="n">learn</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">train_model</span><span class="p">(</span>
+    <span class="n">learn</span><span class="o">=</span><span class="n">learn</span><span class="p">,</span>
+    <span class="n">base_lr</span><span class="o">=</span><span class="n">base_lr</span><span class="p">,</span>
+    <span class="n">lr_mult</span><span class="o">=</span><span class="n">lr_mult</span><span class="p">,</span>
+    <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="n">lr_scheduler_type</span><span class="p">,</span>
+    <span class="n">freeze_epochs</span><span class="o">=</span><span class="n">freeze_epochs</span><span class="p">,</span>
+    <span class="n">num_epochs</span><span class="o">=</span><span class="n">num_epochs</span><span class="p">,</span>
+    <span class="n">pct_start</span><span class="o">=</span><span class="n">pct_start</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">metrics</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">extract_metrics</span><span class="p">(</span><span class="n">learn</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -8289,7 +8334,9 @@ using RESNET50
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">ml_utils</span><span class="p">)</span>
-<span class="n">train_data</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_dataloaders</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">aug_mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">DS_PATH</span><span class="p">,</span> <span class="n">is_test</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">valid_pct</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">train_data</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_dataloaders</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="p">,</span> <span class="n">aug_mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">DS_PATH</span><span class="p">,</span> <span class="n">is_test</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">valid_pct</span><span class="o">=</span><span class="mf">0.2</span>
+<span class="p">)</span>
 
 <span class="n">train_dl</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">train</span>
 <span class="n">valid_dl</span> <span class="o">=</span> <span class="n">train_data</span><span class="o">.</span><span class="n">valid</span>
@@ -8309,13 +8356,13 @@ using RESNET50
 <span class="n">n_test</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_dl</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">'Dataset'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Train'</span><span class="p">,</span> <span class="s1">'Validation'</span><span class="p">,</span> <span class="s1">'Test'</span><span class="p">],</span>
-    <span class="s1">'N'</span><span class="p">:</span> <span class="p">[</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_valid</span><span class="p">,</span> <span class="n">n_test</span><span class="p">],</span>
-    <span class="s1">'Loss'</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
-    <span class="s1">'Accuracy'</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
-    <span class="s1">'Weighted F1'</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
-    <span class="s1">'Micro F1'</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
-    <span class="s1">'Macro F1'</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span>
+    <span class="s2">"Dataset"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"Train"</span><span class="p">,</span> <span class="s2">"Validation"</span><span class="p">,</span> <span class="s2">"Test"</span><span class="p">],</span>
+    <span class="s2">"N"</span><span class="p">:</span> <span class="p">[</span><span class="n">n_train</span><span class="p">,</span> <span class="n">n_valid</span><span class="p">,</span> <span class="n">n_test</span><span class="p">],</span>
+    <span class="s2">"Loss"</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+    <span class="s2">"Accuracy"</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+    <span class="s2">"Weighted F1"</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+    <span class="s2">"Micro F1"</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
+    <span class="s2">"Macro F1"</span><span class="p">:</span> <span class="p">[</span><span class="n">train_results</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">valid_results</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">test_results</span><span class="p">[</span><span class="mi">4</span><span class="p">]],</span>
 <span class="p">}</span>
 
 <span class="n">results_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -8523,15 +8570,19 @@ No augmentations applied.
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">precision_recall_fscore_support</span>
 
 <span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">ml_utils</span><span class="p">)</span>
-<span class="n">device</span> <span class="o">=</span> <span class="s1">'cuda'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">'cpu'</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
 <span class="n">learn</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># Ensure the model is on the correct device</span>
 
 <span class="n">test_files</span> <span class="o">=</span> <span class="n">get_image_files</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">DS_PATH</span><span class="si">}</span><span class="s2">/test"</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">label_func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span>
+<span class="k">def</span> <span class="nf">label_func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span>
 
-<span class="n">tst_dl</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_dataloaders</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">aug_mode</span><span class="o">=</span><span class="n">aug_mode</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">DS_PATH</span><span class="p">,</span> <span class="n">is_test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">tst_dl</span> <span class="o">=</span> <span class="n">ml_utils</span><span class="o">.</span><span class="n">create_dataloaders</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="p">,</span> <span class="n">aug_mode</span><span class="o">=</span><span class="n">aug_mode</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">DS_PATH</span><span class="p">,</span> <span class="n">is_test</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 <span class="n">preds</span><span class="p">,</span> <span class="n">targs</span> <span class="o">=</span> <span class="n">learn</span><span class="o">.</span><span class="n">get_preds</span><span class="p">(</span><span class="n">dl</span><span class="o">=</span><span class="n">tst_dl</span><span class="p">)</span>
 <span class="n">preds</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
@@ -8587,14 +8638,18 @@ No augmentations applied.
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">preds</span><span class="p">,</span> <span class="n">targs</span> <span class="o">=</span> <span class="n">preds</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">targs</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-<span class="n">precision</span><span class="p">,</span> <span class="n">recall</span><span class="p">,</span> <span class="n">f1</span><span class="p">,</span> <span class="n">support</span> <span class="o">=</span> <span class="n">precision_recall_fscore_support</span><span class="p">(</span><span class="n">targs</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="n">metrics_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s1">'Class'</span><span class="p">:</span> <span class="n">test_dl</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span>
-    <span class="s1">'Precision'</span><span class="p">:</span> <span class="n">precision</span><span class="p">,</span>
-    <span class="s1">'Recall'</span><span class="p">:</span> <span class="n">recall</span><span class="p">,</span>
-    <span class="s1">'F1 Score'</span><span class="p">:</span> <span class="n">f1</span><span class="p">,</span>
-    <span class="s1">'Count'</span><span class="p">:</span> <span class="n">support</span>
-<span class="p">})</span>
+<span class="n">precision</span><span class="p">,</span> <span class="n">recall</span><span class="p">,</span> <span class="n">f1</span><span class="p">,</span> <span class="n">support</span> <span class="o">=</span> <span class="n">precision_recall_fscore_support</span><span class="p">(</span>
+    <span class="n">targs</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+<span class="n">metrics_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"Class"</span><span class="p">:</span> <span class="n">test_dl</span><span class="o">.</span><span class="n">vocab</span><span class="p">,</span>
+        <span class="s2">"Precision"</span><span class="p">:</span> <span class="n">precision</span><span class="p">,</span>
+        <span class="s2">"Recall"</span><span class="p">:</span> <span class="n">recall</span><span class="p">,</span>
+        <span class="s2">"F1 Score"</span><span class="p">:</span> <span class="n">f1</span><span class="p">,</span>
+        <span class="s2">"Count"</span><span class="p">:</span> <span class="n">support</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 <span class="n">test_summary_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">metrics_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -9048,9 +9103,10 @@ No augmentations applied.
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">get_feature_model</span><span class="p">(</span><span class="n">learner</span><span class="p">):</span>
     <span class="c1"># The feature extractor will encompass all layers up to the adaptive average pool</span>
     <span class="c1"># In torchvision models, this is typically where the features are pooled before being passed to the classifier</span>
-    <span class="n">modules</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">learner</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">children</span><span class="p">())[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> 
+    <span class="n">modules</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">learner</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">children</span><span class="p">())[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
     <span class="n">feature_extractor</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">modules</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">feature_extractor</span>
+
 
 <span class="n">learn</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">get_feature_model</span><span class="p">(</span><span class="n">learn</span><span class="p">)</span>
 </pre></div>
@@ -9071,16 +9127,17 @@ No augmentations applied.
     <span class="n">features</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>  
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">xb</span><span class="p">,</span> <span class="n">yb</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
-            <span class="n">xb</span> <span class="o">=</span> <span class="n">xb</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>  
+            <span class="n">xb</span> <span class="o">=</span> <span class="n">xb</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
             <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">xb</span><span class="p">)</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> 
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
             <span class="n">features</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-            <span class="n">yb</span> <span class="o">=</span> <span class="n">yb</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> 
+            <span class="n">yb</span> <span class="o">=</span> <span class="n">yb</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
             <span class="n">labels</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">yb</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">features</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+
 
 <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">extract_features</span><span class="p">(</span><span class="n">learn</span><span class="o">.</span><span class="n">dls</span><span class="o">.</span><span class="n">valid</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
 </pre></div>
@@ -9110,7 +9167,9 @@ No augmentations applied.
 <div class="jp-InputPrompt jp-InputArea-prompt">In [74]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">features_reshaped</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># This flattens each feature tensor into a single vector</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">features_reshaped</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+    <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">)</span>  <span class="c1"># This flattens each feature tensor into a single vector</span>
 </pre></div>
 </div>
 </div>
@@ -9142,10 +9201,17 @@ No augmentations applied.
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Plot t-SNE</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">tsne_result</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">tsne_result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">hue</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s1">'tab10'</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="s1">'full'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'t-SNE Results'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Dimension 1'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Dimension 2'</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">tsne_result</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">tsne_result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">hue</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="s2">"tab10"</span><span class="p">,</span>
+    <span class="n">legend</span><span class="o">=</span><span class="s2">"full"</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"t-SNE Results"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"Dimension 1"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"Dimension 2"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -9195,6 +9261,8 @@ No augmentations applied.
             <span class="k">return</span> <span class="n">i</span>
 
     <span class="k">return</span> <span class="kc">None</span>
+
+
 <span class="n">find_index_by_file_name</span><span class="p">(</span><span class="n">tst_dl</span><span class="p">,</span> <span class="s2">"0889_I8YTmcUg7I4"</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -9264,32 +9332,42 @@ No augmentations applied.
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">image_path</span> <span class="o">=</span> <span class="n">get_dl_file_name_by_index</span><span class="p">(</span><span class="n">tst_dl</span><span class="p">,</span> <span class="mi">504</span><span class="p">)</span>
 
 <span class="n">pytorch_model</span> <span class="o">=</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span>
-<span class="n">pytorch_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span> 
+<span class="n">pytorch_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 
-<span class="n">device</span> <span class="o">=</span> <span class="s2">"cpu"</span>  <span class="c1">#torch.device("cuda" if torch.cuda.is_available() else "cpu")</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cpu"</span>  <span class="c1"># torch.device("cuda" if torch.cuda.is_available() else "cpu")</span>
 <span class="n">pytorch_model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">get_input_transform</span><span class="p">():</span>
-    <span class="n">normalize</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span>
-    <span class="n">transf</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
-        <span class="n">transforms</span><span class="o">.</span><span class="n">Resize</span><span class="p">((</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">)),</span>
-        <span class="n">transforms</span><span class="o">.</span><span class="n">CenterCrop</span><span class="p">(</span><span class="mi">224</span><span class="p">),</span>
-        <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
-        <span class="n">normalize</span>
-    <span class="p">])</span>
+    <span class="n">normalize</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span>
+        <span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">transf</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">Resize</span><span class="p">((</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">)),</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">CenterCrop</span><span class="p">(</span><span class="mi">224</span><span class="p">),</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+            <span class="n">normalize</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">transf</span>
 
 
-<span class="k">def</span> <span class="nf">get_input_tensor</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="s2">"cpu"</span><span class="p">):</span>
-    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">'RGB'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_input_tensor</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">)</span>
     <span class="n">tensor</span> <span class="o">=</span> <span class="n">get_input_transform</span><span class="p">()(</span><span class="n">img</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Add batch dimension</span>
     <span class="k">return</span> <span class="n">tensor</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">batch_predict</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="s2">"cpu"</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">batch_predict</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
     <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-    <span class="n">batch</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">get_input_transform</span><span class="p">()(</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'uint8'</span><span class="p">)))</span> <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">images</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+        <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">get_input_transform</span><span class="p">()(</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"uint8"</span><span class="p">)))</span>
+            <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">images</span>
+        <span class="p">),</span>
+        <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">batch</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
         <span class="n">logits</span> <span class="o">=</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
@@ -9303,9 +9381,13 @@ No augmentations applied.
 <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="n">explainer</span> <span class="o">=</span> <span class="n">lime_image</span><span class="o">.</span><span class="n">LimeImageExplainer</span><span class="p">()</span>
-<span class="n">explanation</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain_instance</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">'RGB'</span><span class="p">)),</span>
-                                         <span class="n">batch_predict</span><span class="p">,</span>  <span class="c1"># Classification function</span>
-                                         <span class="n">top_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hide_color</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">explanation</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain_instance</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">"RGB"</span><span class="p">)),</span>
+    <span class="n">batch_predict</span><span class="p">,</span>  <span class="c1"># Classification function</span>
+    <span class="n">top_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">hide_color</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -9332,7 +9414,9 @@ No augmentations applied.
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">class_names</span> <span class="o">=</span> <span class="n">test_dl</span><span class="o">.</span><span class="n">vocab</span>
-<span class="n">label_to_explain</span> <span class="o">=</span> <span class="n">explanation</span><span class="o">.</span><span class="n">top_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># This is the index of the top label from LIME</span>
+<span class="n">label_to_explain</span> <span class="o">=</span> <span class="n">explanation</span><span class="o">.</span><span class="n">top_labels</span><span class="p">[</span>
+    <span class="mi">0</span>
+<span class="p">]</span>  <span class="c1"># This is the index of the top label from LIME</span>
 </pre></div>
 </div>
 </div>
@@ -9350,11 +9434,14 @@ No augmentations applied.
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">class_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">prob</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="n">label_to_explain</span> <span class="o">=</span> <span class="n">explanation</span><span class="o">.</span><span class="n">top_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># This fetches the most likely label index</span>
-<span class="n">temp</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">explanation</span><span class="o">.</span><span class="n">get_image_and_mask</span><span class="p">(</span><span class="n">label_to_explain</span><span class="p">,</span> <span class="n">positive_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hide_rest</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">temp</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">explanation</span><span class="o">.</span><span class="n">get_image_and_mask</span><span class="p">(</span>
+    <span class="n">label_to_explain</span><span class="p">,</span> <span class="n">positive_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hide_rest</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
 <span class="n">img_boundary</span> <span class="o">=</span> <span class="n">mark_boundaries</span><span class="p">(</span><span class="n">temp</span> <span class="o">/</span> <span class="mf">255.0</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img_boundary</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Top predicted class: </span><span class="si">{</span><span class="n">class_names</span><span class="p">[</span><span class="n">label_to_explain</span><span class="p">]</span><span class="si">}</span><span class="s2"> - Probability: </span><span class="si">{</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">label_to_explain</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="sa">f</span><span class="s2">"Top predicted class: </span><span class="si">{</span><span class="n">class_names</span><span class="p">[</span><span class="n">label_to_explain</span><span class="p">]</span><span class="si">}</span><span class="s2"> - Probability: </span><span class="si">{</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">label_to_explain</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+<span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>

@@ -7554,7 +7554,7 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">'studies/main_study.pkl'</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"studies/main_study.pkl"</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">loaded_study</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -8035,7 +8035,9 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"base_lr"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"base_lr"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8076,7 +8078,9 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"base_lr"</span><span class="p">,</span> <span class="s2">"batch_size"</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"base_lr"</span><span class="p">,</span> <span class="s2">"batch_size"</span><span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8117,7 +8121,9 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_contour</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8198,7 +8204,9 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_parallel_coordinate</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_parallel_coordinate</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8238,10 +8246,13 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_slice</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">,</span> <span class="s2">"base_lr"</span><span class="p">])</span>
-<span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_slice</span><span class="p">(</span><span class="n">loaded_study</span><span class="p">,</span>
-                                           <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">,</span> <span class="s2">"weight_decay"</span><span class="p">,</span> <span class="s2">"freeze_epochs"</span><span class="p">,</span> <span class="s2">"lr_scheduler"</span><span class="p">,</span>
-                                                   <span class="s2">"pct_start"</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_slice</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"aug_mode"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">,</span> <span class="s2">"base_lr"</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">optuna</span><span class="o">.</span><span class="n">visualization</span><span class="o">.</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">plot_slice</span><span class="p">(</span>
+    <span class="n">loaded_study</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">,</span> <span class="s2">"weight_decay"</span><span class="p">,</span> <span class="s2">"freeze_epochs"</span><span class="p">,</span> <span class="s2">"lr_scheduler"</span><span class="p">,</span> <span class="s2">"pct_start"</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
